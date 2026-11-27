@@ -49,12 +49,19 @@ df["month"] = df["date"].dt.month  # 월(1~12)만 뽑아서 새 열로 추가
 
 
 # ----- 3-2. 메뉴 API에서 데이터 받아오기 (12주차 서버) -----
-MENU_API_URL = "http://127.0.0.1:8000/menu"  # 창 B에서 켠 메뉴 서버 주소
+# 주소와 API 키는 코드에 직접 쓰지 않고 .streamlit/secrets.toml(비밀 설정 파일)에서 읽음
+try:
+    MENU_API_URL = st.secrets.get("MENU_API_URL", "http://127.0.0.1:8000/menu")  # 없으면 내 컴퓨터 서버 주소
+    API_KEY = st.secrets.get("API_KEY", "")  # 없으면 빈 값 (키 없이 요청)
+except Exception:  # secrets.toml 파일 자체가 없을 때도 화면이 깨지지 않게
+    MENU_API_URL = "http://127.0.0.1:8000/menu"
+    API_KEY = ""
 
 
 @st.cache_data(ttl=10)  # 10초 동안만 기억 → 서버 메뉴가 바뀌면 10초 뒤 새로 받아옴
 def load_menu():
-    return pd.read_json(MENU_API_URL)  # 주소로 요청해서 받은 JSON을 바로 표로 바꿈
+    headers = {"X-API-Key": API_KEY} if API_KEY else None  # 키가 있을 때만 요청에 같이 보냄
+    return pd.read_json(MENU_API_URL, storage_options=headers)  # 주소로 요청해서 받은 JSON을 표로 바꿈
 
 
 # ----- 4. 왼쪽 사이드바: 조건 선택 -----
